@@ -10,10 +10,19 @@
 *.local
 
 # IDE & AI Agent configurations with sensitive credentials/tokens
-.vscode/mcp.json
-.cursor/mcp.json
+.vscode/
+.cursor/
 claude_desktop_config.json
+.claude/
+.agents/
+.antigravity/
+
+# Superpowers plans, specs, and execution ledgers
 .superpowers/
+superpowers/
+docs/superpowers/
+*.plan.md
+sdd/
 
 # Next.js build output
 .next/
