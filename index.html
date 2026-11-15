@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Manajemen Kas Kelas</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Supabase JS SDK v2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Sistem Manajemen Kas Kelas</h1>
+          <p class="text-xs sm:text-sm text-slate-500">Pencatatan Arus Keuangan & Transparansi Saldo Real-Time</p>
+        </div>
+      </div>
+      
+      <!-- Connection Status Badge -->
+      <div id="connection-badge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all">
+        <span class="w-2 h-2 rounded-full animate-pulse" id="connection-dot"></span>
+        <span id="connection-text">Memeriksa Koneksi...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 w-full space-y-6">
+
+    <!-- Supabase Setup Guide Banner (Shown in Demo Mode) -->
+    <div id="demo-banner" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 flex items-start justify-between gap-3 shadow-xs">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          <p class="font-semibold text-amber-950">Mode Demonstrasi Lokal Aktif (localStorage)</p>
+          <p class="text-xs sm:text-sm text-amber-800 mt-0.5">
+            Konstanta <code class="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono text-xs">SUPABASE_URL</code> belum diganti dengan URL project Supabase. Data disimpan sementara di browser agar seluruh fitur CRUD, validasi <span class="font-semibold">TC-01</span>, dan pengujian <span class="font-semibold">SEC-01</span> tetap dapat diuji secara penuh!
+          </p>
+        </div>
+      </div>
+      <button onclick="document.getElementById('demo-banner').remove()" class="text-amber-500 hover:text-amber-700 transition" title="Tutup">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      </button>
+    </div>
+
+    <!-- Summary KPI Cards (Top Section - 3 Cards) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      
+      <!-- Card 1: Total Saldo Akhir -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold text-slate-500">Total Saldo Akhir</p>
+          <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+        </div>
+        <p id="total-saldo" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-3 tracking-tight">Rp 0</p>
+        <p class="text-xs text-slate-400 mt-1">Akumulasi Kas Masuk dikurangi Kas Keluar</p>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600"></div>
+      </div>
+
+      <!-- Card 2: Total Kas Masuk -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold text-slate-500">Total Kas Masuk</p>
+          <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+        </div>
+        <p id="total-masuk" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-3 tracking-tight">Rp 0</p>
+        <p class="text-xs text-slate-400 mt-1">Total seluruh iuran & penerimaan kas</p>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+      </div>
+
+      <!-- Card 3: Total Kas Keluar -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold text-slate-500">Total Kas Keluar</p>
+          <div class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </div>
+        </div>
+        <p id="total-keluar" class="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-3 tracking-tight">Rp 0</p>
+        <p class="text-xs text-slate-400 mt-1">Total pengeluaran operasional kelas</p>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-rose-500"></div>
+      </div>
+
+    </div>
+
+    <!-- Main 2-Column Split Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+      
+      <!-- Left Column: Form Input & Validation + QA Panel (lg:col-span-4) -->
+      <div class="lg:col-span-4 space-y-6">
+        
+        <!-- Form Card -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+            <h2 id="form-title" class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Catat Transaksi</span>
+            </h2>
+            <span id="form-badge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">Baru</span>
+          </div>
+
+          <!-- Alert Error Box (TC-01 Validation Target) -->
+          <div id="alert-error" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm flex items-start gap-2.5 mb-5 shadow-xs" role="alert">
+            <svg class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div class="flex-1">
+              <p class="font-bold text-rose-800">Peringatan Validasi</p>
+              <p id="alert-message" class="text-xs mt-0.5 font-medium">Nominal harus lebih dari 0</p>
+            </div>
+            <button type="button" onclick="hideErrorAlert()" class="text-rose-400 hover:text-rose-600">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </button>
+          </div>
+
+          <!-- Transaction Form -->
+          <form id="transaction-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+            <input type="hidden" id="edit-id" value="">
+
+            <!-- Tanggal -->
+            <div>
+              <label for="input-tanggal" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Transaksi</label>
+              <input type="date" id="input-tanggal" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition">
+            </div>
+
+            <!-- Jenis Transaksi -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Jenis Transaksi</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btn-type-masuk" onclick="selectTransactionType('Masuk')" class="py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                  Kas Masuk
+                </button>
+                <button type="button" id="btn-type-keluar" onclick="selectTransactionType('Keluar')" class="py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                  Kas Keluar
+                </button>
+              </div>
+              <input type="hidden" id="input-jenis" value="Masuk">
+            </div>
+
+            <!-- Nominal (Tanpa min="1" agar penguji dapat input negatif untuk TC-01) -->
+            <div>
+              <label for="input-nominal" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Nominal (Rupiah)</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">Rp</div>
+                <input type="number" id="input-nominal" placeholder="Contoh: 50000" class="w-full pl-11 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition">
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Wajib bernilai positif (angka di atas 0).</p>
+            </div>
+
+            <!-- Keterangan -->
+            <div>
+              <label for="input-keterangan" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Keterangan</label>
+              <textarea id="input-keterangan" rows="3" placeholder="Contoh: Iuran kas kelas minggu ke-1..." required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition"></textarea>
+            </div>
+
+            <!-- Buttons -->
+            <div class="pt-2 space-y-2">
+              <button type="submit" id="btn-submit" class="w-full py-2.5 px-4 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-sm shadow-indigo-200 transition-all flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span id="btn-submit-text">Simpan Transaksi</span>
+              </button>
+
+              <button type="button" id="btn-cancel" onclick="resetFormState()" class="hidden w-full py-2 px-4 rounded-xl font-semibold text-xs text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+                Batal Edit
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Panel Uji Cepat SKPL (QA & Security Mode) -->
+        <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-xs bg-gradient-to-b from-indigo-50/40 to-white">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-950">Panel Uji Cepat SKPL (QA & Security)</h3>
+          </div>
+          <p class="text-xs text-slate-500 mb-3">Tombol otomatisasi skenario uji sesuai kontrak PRD:</p>
+          <div class="space-y-2">
+            <button type="button" onclick="runTestTC01()" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition flex items-center justify-between">
+              <span><strong>TC-01:</strong> Input Nominal Negatif (-50000)</span>
+              <span class="text-[10px] bg-rose-200 px-1.5 py-0.5 rounded">Tolak</span>
+            </button>
+            <button type="button" onclick="runTestTC02()" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition flex items-center justify-between">
+              <span><strong>TC-02:</strong> Pemasukan Valid (+20000)</span>
+              <span class="text-[10px] bg-emerald-200 px-1.5 py-0.5 rounded">Sukses</span>
+            </button>
+            <button type="button" onclick="runTestSEC01()" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition flex items-center justify-between">
+              <span><strong>SEC-01:</strong> Uji Injeksi XSS (&lt;img onerror&gt;)</span>
+              <span class="text-[10px] bg-indigo-200 px-1.5 py-0.5 rounded">Sanitasi</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Data Table & Filters (lg:col-span-8) -->
+      <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        
+        <!-- Table Toolbar -->
+        <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Riwayat Transaksi Kas</h2>
+            <p class="text-xs text-slate-500"><span id="record-count">0</span> transaksi tercatat</p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <!-- Search Box -->
+            <div class="relative min-w-[200px]">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+              <input type="text" id="search-input" oninput="handleSearchAndFilter()" placeholder="Cari keterangan..." class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            </div>
+
+            <!-- Filter Category Dropdown -->
+            <select id="filter-jenis" onchange="handleSearchAndFilter()" class="px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+              <option value="Semua">Semua Transaksi</option>
+              <option value="Masuk">Kas Masuk</option>
+              <option value="Keluar">Kas Keluar</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <th class="py-3 px-4">Tanggal</th>
+                <th class="py-3 px-4">Jenis</th>
+                <th class="py-3 px-4">Nominal</th>
+                <th class="py-3 px-4">Keterangan</th>
+                <th class="py-3 px-4 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="transaction-table-body" class="divide-y divide-slate-100 text-sm">
+              <!-- Baris data di-render secara dinamis oleh JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State Placeholder -->
+        <div id="empty-state" class="hidden py-16 px-4 text-center">
+          <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-bold text-slate-700">Belum Ada Transaksi Ditemukan</h3>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Silakan gunakan formulir di sebelah kiri untuk mencatat transaksi kas baru atau sesuaikan filter pencarian Anda.</p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-12 py-4 text-center text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4">
+      Sistem Manajemen Kas Kelas &copy; 2026 &bull; Sesuai Spesifikasi SKPL & Validasi Black Box Testing
+    </div>
+  </footer>
+
+  <!-- =================================================================== -->
+  <!-- JAVASCRIPT APPLICATION LOGIC & DATA LAYER                           -->
+  <!-- =================================================================== -->
+  <script>
+    // 1. Kredensial Supabase (Mode Cloud Aktif - Hanya Menggunakan Public Publishable Key)
+    const SUPABASE_URL = 'https://vokdywovcatrjxsggzml.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_KJAkaq8neCR50R9NP_6SDQ_vPK687Up';
+
+    // State Aplikasi
+    let supabaseClient = null;
+    let isCloudMode = false;
+    let transactionsData = [];
+
+    // Formatters Mata Uang & Tanggal Indonesia
+    const currencyFormatter = new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+
+    const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+
+    // Dummy Data Awal untuk Mode Lokal (Meniru Skema SQL)
+    const INITIAL_DUMMY_DATA = [
+      {
+        id: 1,
+        tanggal: getOffsetDate(-3),
+        jenis_transaksi: 'Masuk',
+        nominal: 150000,
+        keterangan: 'Iuran Kas Kelas Minggu Ke-1',
+        created_at: new Date(Date.now() - 3 * 86400000).toISOString()
+      },
+      {
+        id: 2,
+        tanggal: getOffsetDate(-2),
+        jenis_transaksi: 'Keluar',
+        nominal: 35000,
+        keterangan: 'Pembelian Spidol & Penghapus Whiteboard',
+        created_at: new Date(Date.now() - 2 * 86400000).toISOString()
+      },
+      {
+        id: 3,
+        tanggal: getOffsetDate(-1),
+        jenis_transaksi: 'Masuk',
+        nominal: 100000,
+        keterangan: 'Iuran Kas Kelas Minggu Ke-2',
+        created_at: new Date(Date.now() - 1 * 86400000).toISOString()
+      }
+    ];
+
+    function getOffsetDate(daysOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      return d.toISOString().split('T')[0];
+    }
+
+    // Inisialisasi Data Layer (Supabase vs LocalStorage)
+    function initDataLayer() {
+      const hasValidUrl = typeof SUPABASE_URL === 'string' && 
+                           SUPABASE_URL.startsWith('https://') && 
+                           !SUPABASE_URL.includes('GANTI_DENGAN');
+
+      if (hasValidUrl && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          isCloudMode = true;
+          updateConnectionStatus(true, 'Cloud Supabase Active');
+          document.getElementById('demo-banner').classList.add('hidden');
+        } catch (e) {
+          console.warn('Gagal inisialisasi Supabase, beralih ke localStorage:', e);
+          fallbackToLocalStorage();
+        }
+      } else {
+        fallbackToLocalStorage();
+      }
+    }
+
+    function fallbackToLocalStorage() {
+      isCloudMode = false;
+      updateConnectionStatus(false, 'Local Demo Mode');
+      document.getElementById('demo-banner').classList.remove('hidden');
+
+      const stored = localStorage.getItem('cash_transactions');
+      if (!stored) {
+        localStorage.setItem('cash_transactions', JSON.stringify(INITIAL_DUMMY_DATA));
+      }
+    }
+
+    function updateConnectionStatus(isOnline, label) {
+      const badge = document.getElementById('connection-badge');
+      const dot = document.getElementById('connection-dot');
+      const text = document.getElementById('connection-text');
+
+      text.textContent = label;
+      if (isOnline) {
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200';
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+      } else {
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border-amber-200';
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+      }
+    }
+
+    // Operasi CRUD Abstraksi
+    async function apiFetchTransactions() {
+      if (isCloudMode && supabaseClient) {
+        const { data, error } = await supabaseClient
+          .from('cash_transactions')
+          .select('*')
+          .order('tanggal', { ascending: false })
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      } else {
+        const raw = localStorage.getItem('cash_transactions');
+        const items = raw ? JSON.parse(raw) : [];
+        return items.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal) || b.id - a.id);
+      }
+    }
+
+    async function apiInsertTransaction(record) {
+      if (isCloudMode && supabaseClient) {
+        const { data, error } = await supabaseClient
+          .from('cash_transactions')
+          .insert([record])
+          .select();
+        if (error) throw error;
+        return data[0];
+      } else {
+        const raw = localStorage.getItem('cash_transactions');
+        const items = raw ? JSON.parse(raw) : [];
+        const newRecord = {
+          ...record,
+          id: Date.now(),
+          created_at: new Date().toISOString()
+        };
+        items.unshift(newRecord);
+        localStorage.setItem('cash_transactions', JSON.stringify(items));
+        return newRecord;
+      }
+    }
+
+    async function apiUpdateTransaction(id, updates) {
+      if (isCloudMode && supabaseClient) {
+        const { data, error } = await supabaseClient
+          .from('cash_transactions')
+          .update(updates)
+          .eq('id', id)
+          .select();
+        if (error) throw error;
+        return data[0];
+      } else {
+        const raw = localStorage.getItem('cash_transactions');
+        let items = raw ? JSON.parse(raw) : [];
+        items = items.map(item => item.id == id ? { ...item, ...updates } : item);
+        localStorage.setItem('cash_transactions', JSON.stringify(items));
+        return items.find(item => item.id == id);
+      }
+    }
+
+    async function apiDeleteTransaction(id) {
+      if (isCloudMode && supabaseClient) {
+        const { error } = await supabaseClient
+          .from('cash_transactions')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        const raw = localStorage.getItem('cash_transactions');
+        let items = raw ? JSON.parse(raw) : [];
+        items = items.filter(item => item.id != id);
+        localStorage.setItem('cash_transactions', JSON.stringify(items));
+      }
+    }
+
+    // Refresh Data & Render UI
+    async function refreshData() {
+      try {
+        transactionsData = await apiFetchTransactions();
+        renderSummaryKPI();
+        handleSearchAndFilter();
+      } catch (err) {
+        console.error('Error saat memuat transaksi:', err);
+        showErrorAlert('Gagal memuat data dari database: ' + (err.message || err));
+      }
+    }
+
+    // Render 3 Kartu Ringkasan (Saldo Akhir, Kas Masuk, Kas Keluar)
+    function renderSummaryKPI() {
+      let totalMasuk = 0;
+      let totalKeluar = 0;
+
+      transactionsData.forEach(item => {
+        const nom = parseFloat(item.nominal) || 0;
+        if (item.jenis_transaksi === 'Masuk') {
+          totalMasuk += nom;
+        } else if (item.jenis_transaksi === 'Keluar') {
+          totalKeluar += nom;
+        }
+      });
+
+      const totalSaldo = totalMasuk - totalKeluar;
+
+      document.getElementById('total-masuk').textContent = currencyFormatter.format(totalMasuk);
+      document.getElementById('total-keluar').textContent = currencyFormatter.format(totalKeluar);
+      
+      const saldoElem = document.getElementById('total-saldo');
+      saldoElem.textContent = currencyFormatter.format(totalSaldo);
+      if (totalSaldo < 0) {
+        saldoElem.className = 'text-2xl sm:text-3xl font-extrabold text-rose-600 mt-3 tracking-tight';
+      } else {
+        saldoElem.className = 'text-2xl sm:text-3xl font-extrabold text-slate-900 mt-3 tracking-tight';
+      }
+    }
+
+    // Filter & Search Real-Time
+    function handleSearchAndFilter() {
+      const keyword = (document.getElementById('search-input').value || '').toLowerCase().trim();
+      const jenisFilter = document.getElementById('filter-jenis').value;
+
+      const filtered = transactionsData.filter(item => {
+        const matchKeterangan = (item.keterangan || '').toLowerCase().includes(keyword);
+        const matchJenis = jenisFilter === 'Semua' || item.jenis_transaksi === jenisFilter;
+        return matchKeterangan && matchJenis;
+      });
+
+      renderTable(filtered);
+    }
+
+    // Render Tabel Responsif & Aman dari XSS (SEC-01)
+    function renderTable(items) {
+      const tbody = document.getElementById('transaction-table-body');
+      const emptyState = document.getElementById('empty-state');
+      const recordCount = document.getElementById('record-count');
+
+      tbody.innerHTML = '';
+      recordCount.textContent = items.length;
+
+      if (!items || items.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      items.forEach(item => {
+        // Baris tabel dibuat menggunakan document.createElement untuk menjamin SEC-01 Anti-XSS
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition-colors';
+
+        // 1. Tanggal
+        const tdTanggal = document.createElement('td');
+        tdTanggal.className = 'py-3.5 px-4 text-xs font-semibold text-slate-600 whitespace-nowrap';
+        let formattedDate = item.tanggal;
+        try {
+          formattedDate = dateFormatter.format(new Date(item.tanggal));
+        } catch (e) {}
+        tdTanggal.textContent = formattedDate;
+        tr.appendChild(tdTanggal);
+
+        // 2. Jenis Transaksi Badge
+        const tdJenis = document.createElement('td');
+        tdJenis.className = 'py-3.5 px-4 whitespace-nowrap';
+        const badge = document.createElement('span');
+        if (item.jenis_transaksi === 'Masuk') {
+          badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+          badge.textContent = 'Masuk';
+        } else {
+          badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200';
+          badge.textContent = 'Keluar';
+        }
+        tdJenis.appendChild(badge);
+        tr.appendChild(tdJenis);
+
+        // 3. Nominal
+        const tdNominal = document.createElement('td');
+        tdNominal.className = 'py-3.5 px-4 text-xs font-bold whitespace-nowrap ' + 
+          (item.jenis_transaksi === 'Masuk' ? 'text-emerald-600' : 'text-rose-600');
+        const prefix = item.jenis_transaksi === 'Masuk' ? '+ ' : '- ';
+        tdNominal.textContent = prefix + currencyFormatter.format(parseFloat(item.nominal) || 0);
+        tr.appendChild(tdNominal);
+
+        // 4. Keterangan (MUTLAK AMAN ANTI-XSS: menggunakan .textContent)
+        const tdKeterangan = document.createElement('td');
+        tdKeterangan.className = 'py-3.5 px-4 text-xs text-slate-700 max-w-xs break-words';
+        tdKeterangan.textContent = item.keterangan || '-';
+        tr.appendChild(tdKeterangan);
+
+        // 5. Aksi (Edit & Hapus)
+        const tdAksi = document.createElement('td');
+        tdAksi.className = 'py-3.5 px-4 text-right whitespace-nowrap';
+        
+        const actionContainer = document.createElement('div');
+        actionContainer.className = 'flex items-center justify-end gap-1.5';
+
+        // Tombol Edit
+        const btnEdit = document.createElement('button');
+        btnEdit.type = 'button';
+        btnEdit.className = 'p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition';
+        btnEdit.title = 'Edit Transaksi';
+        btnEdit.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>`;
+        btnEdit.onclick = () => loadEditTransaction(item.id);
+
+        // Tombol Hapus
+        const btnDelete = document.createElement('button');
+        btnDelete.type = 'button';
+        btnDelete.className = 'p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition';
+        btnDelete.title = 'Hapus Transaksi';
+        btnDelete.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`;
+        btnDelete.onclick = () => handleDeleteTransaction(item.id);
+
+        actionContainer.appendChild(btnEdit);
+        actionContainer.appendChild(btnDelete);
+        tdAksi.appendChild(actionContainer);
+        tr.appendChild(tdAksi);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Toggle Jenis Transaksi Masuk/Keluar
+    function selectTransactionType(type) {
+      document.getElementById('input-jenis').value = type;
+      const btnMasuk = document.getElementById('btn-type-masuk');
+      const btnKeluar = document.getElementById('btn-type-keluar');
+
+      if (type === 'Masuk') {
+        btnMasuk.className = 'py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-400';
+        btnKeluar.className = 'py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100';
+      } else {
+        btnKeluar.className = 'py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-rose-50 text-rose-700 border-rose-300 ring-2 ring-rose-400';
+        btnMasuk.className = 'py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100';
+      }
+    }
+
+    // Alert Box Handlers (TC-01 Error Notification)
+    function showErrorAlert(message) {
+      const alertBox = document.getElementById('alert-error');
+      const msgElem = document.getElementById('alert-message');
+      msgElem.textContent = message;
+      alertBox.classList.remove('hidden');
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideErrorAlert() {
+      document.getElementById('alert-error').classList.add('hidden');
+    }
+
+    // Form Submit Handler dengan Validasi Ketat TC-01 & TC-02
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      hideErrorAlert();
+
+      const tanggal = document.getElementById('input-tanggal').value;
+      const jenis = document.getElementById('input-jenis').value;
+      const nominalRaw = document.getElementById('input-nominal').value;
+      const keterangan = document.getElementById('input-keterangan').value.trim();
+      const editId = document.getElementById('edit-id').value;
+
+      // VALIDASI KETAT BLACK BOX (TC-01):
+      // Nominal harus berupa angka valid dan > 0
+      const nominal = parseFloat(nominalRaw);
+      if (isNaN(nominal) || nominal <= 0) {
+        showErrorAlert('Nominal harus lebih dari 0');
+        return; // Hentikan penyimpanan ke database
+      }
+
+      if (!tanggal) {
+        showErrorAlert('Tanggal transaksi wajib dipilih');
+        return;
+      }
+
+      if (!keterangan) {
+        showErrorAlert('Keterangan transaksi wajib diisi');
+        return;
+      }
+
+      const payload = {
+        tanggal: tanggal,
+        jenis_transaksi: jenis,
+        nominal: nominal,
+        keterangan: keterangan
+      };
+
+      const btnSubmit = document.getElementById('btn-submit');
+      const originalText = document.getElementById('btn-submit-text').textContent;
+      btnSubmit.disabled = true;
+      btnSubmit.classList.add('opacity-75', 'cursor-not-allowed');
+      document.getElementById('btn-submit-text').textContent = 'Menyimpan...';
+
+      try {
+        if (editId) {
+          await apiUpdateTransaction(editId, payload);
+        } else {
+          await apiInsertTransaction(payload);
+        }
+        resetFormState();
+        await refreshData();
+      } catch (err) {
+        console.error('Gagal menyimpan transaksi:', err);
+        showErrorAlert('Terjadi kesalahan database: ' + (err.message || err));
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-75', 'cursor-not-allowed');
+        document.getElementById('btn-submit-text').textContent = originalText;
+      }
+    }
+
+    // Muat Data ke Form untuk Update (Edit)
+    function loadEditTransaction(id) {
+      const item = transactionsData.find(t => t.id == id);
+      if (!item) return;
+
+      document.getElementById('edit-id').value = item.id;
+      document.getElementById('input-tanggal').value = item.tanggal;
+      selectTransactionType(item.jenis_transaksi);
+      document.getElementById('input-nominal').value = item.nominal;
+      document.getElementById('input-keterangan').value = item.keterangan;
+
+      document.getElementById('form-title').innerHTML = `
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <span>Edit Transaksi</span>
+      `;
+      document.getElementById('form-badge').textContent = 'Edit Mode';
+      document.getElementById('form-badge').className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700';
+      document.getElementById('btn-submit-text').textContent = 'Perbarui Transaksi';
+      document.getElementById('btn-cancel').classList.remove('hidden');
+
+      hideErrorAlert();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Reset Form ke Status Tambah Baru
+    function resetFormState() {
+      document.getElementById('edit-id').value = '';
+      document.getElementById('input-nominal').value = '';
+      document.getElementById('input-keterangan').value = '';
+      document.getElementById('input-tanggal').value = new Date().toISOString().split('T')[0];
+      selectTransactionType('Masuk');
+
+      document.getElementById('form-title').innerHTML = `
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <span>Catat Transaksi</span>
+      `;
+      document.getElementById('form-badge').textContent = 'Baru';
+      document.getElementById('form-badge').className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600';
+      document.getElementById('btn-submit-text').textContent = 'Simpan Transaksi';
+      document.getElementById('btn-cancel').classList.add('hidden');
+      hideErrorAlert();
+    }
+
+    // Hapus Transaksi dengan Dialog Konfirmasi
+    async function handleDeleteTransaction(id) {
+      if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+        return;
+      }
+      try {
+        await apiDeleteTransaction(id);
+        if (document.getElementById('edit-id').value == id) {
+          resetFormState();
+        }
+        await refreshData();
+      } catch (err) {
+        console.error('Gagal menghapus transaksi:', err);
+        showErrorAlert('Gagal menghapus data: ' + (err.message || err));
+      }
+    }
+
+    // ===================================================================
+    // PANEL UJI CEPAT SKPL (1-CLICK QA & SECURITY SIMULATION)
+    // ===================================================================
+    function runTestTC01() {
+      resetFormState();
+      document.getElementById('input-tanggal').value = new Date().toISOString().split('T')[0];
+      selectTransactionType('Keluar');
+      document.getElementById('input-nominal').value = '-50000';
+      document.getElementById('input-keterangan').value = 'Pengujian TC-01 Nominal Negatif';
+      
+      // Memicu submit untuk menguji penolakan validasi
+      document.getElementById('transaction-form').requestSubmit();
+    }
+
+    function runTestTC02() {
+      resetFormState();
+      document.getElementById('input-tanggal').value = new Date().toISOString().split('T')[0];
+      selectTransactionType('Masuk');
+      document.getElementById('input-nominal').value = '20000';
+      document.getElementById('input-keterangan').value = 'Iuran Kas Mingguan (Uji TC-02)';
+      
+      // Memicu submit untuk menyimpan pemasukan valid
+      document.getElementById('transaction-form').requestSubmit();
+    }
+
+    function runTestSEC01() {
+      resetFormState();
+      document.getElementById('input-tanggal').value = new Date().toISOString().split('T')[0];
+      selectTransactionType('Masuk');
+      document.getElementById('input-nominal').value = '15000';
+      document.getElementById('input-keterangan').value = '<img src=x onerror=alert("Jebol XSS!")>';
+      
+      // Memicu submit untuk membuktikan kekebalan Anti-XSS
+      document.getElementById('transaction-form').requestSubmit();
+    }
+
+    // Eksekusi Saat Halaman Pertama Kali Dibuka
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('input-tanggal').value = new Date().toISOString().split('T')[0];
+      initDataLayer();
+      refreshData();
+    });
+  </script>
+</body>
+</html>
