@@ -73,8 +73,8 @@ cp .env.example .env.local
 
 Isi `.env.local`:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://vokdywovcatrjxsggzml.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_KJAkaq8neCR50R9NP_6SDQ_vPK687Up
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-publishable-anon-key
 ```
 
 ### 3. Menjalankan di Lingkungan Lokal
